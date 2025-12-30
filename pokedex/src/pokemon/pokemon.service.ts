@@ -5,6 +5,7 @@ import { UpdatePokemonDto } from './dto/update-pokemon.dto';
 import { Model } from 'mongoose';
 import { Pokemon } from './entities/pokemon.entity';
 import { PokemonSearchTermType } from './types';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class PokemonService {
@@ -22,8 +23,14 @@ export class PokemonService {
     }
   }
 
-  findAll() {
-    return `This action returns all pokemon`;
+  findAll(paginatinoDto: PaginationDto) {
+    const { limit = 10, offset = 0 } = paginatinoDto;
+    return this.pokemonModel
+      .find()
+      .limit(limit)
+      .skip(offset)
+      .sort({ no: 1 })
+      .select('-__v');
   }
 
   async findOne(term: PokemonSearchTermType) {
@@ -73,6 +80,19 @@ export class PokemonService {
       throw new BadRequestException(`Pokemon with id "${id}" not found`);
     }
     return;
+  }
+
+  async executeSeed(data: CreatePokemonDto[]) {
+    const insertPromises = data.map((pokemon) => {
+      return this.pokemonModel.create(pokemon);
+    });
+    await Promise.all(insertPromises);
+    return 'Seed executed';
+  }
+
+  async clearDatabase() {
+    await this.pokemonModel.deleteMany({});
+    return 'Database cleared';
   }
 
   private handleErrors(error: any) {
